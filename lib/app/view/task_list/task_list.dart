@@ -1,10 +1,8 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todos_app/app/view/components/h1_title.dart';
 import 'package:todos_app/app/view/components/shape.dart';
 import 'package:todos_app/app/view/model/task.dart';
+import 'package:todos_app/app/view/repository/task_repository.dart';
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
@@ -14,13 +12,7 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPageState extends State<TaskListPage> {
-  final taskList = <Task>[];
-
-  @override
-  Future<void> initState() async {
-    final prefs = await SharedPreferences.getInstance();
-    super.initState();
-  }
+  final TaskRepository taskRepository = TaskRepository();
 
   @override
   Widget build(BuildContext context) {
@@ -31,11 +23,25 @@ class _TaskListPageState extends State<TaskListPage> {
         children: [
           const _Header(),
           Expanded(
-            child: _TaskList(
-              taskList,
-              onTaskDoneChange: (task) {
-                task.done = !task.done;
-                setState(() {});
+            child: FutureBuilder<List<Task>>(
+              future: taskRepository.getTasks(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(child: Text("No hay tareas"));
+                }
+
+                return _TaskList(
+                  snapshot.data!,
+                  onTaskDoneChange: (task) {
+                    task.done = !task.done;
+                    taskRepository.saveTasks(snapshot.data!);
+                    setState(() {});
+                  },
+                );
               },
             ),
           ),
@@ -54,17 +60,8 @@ class _TaskListPageState extends State<TaskListPage> {
       isScrollControlled: true,
       builder:
           (_) => _NewTaskModal(
-            onTaskCreated: (Task task) async {
-              taskList.add(task);
-              final prefs = await SharedPreferences.getInstance();
-              prefs.setStringList(
-                'tasks',
-                taskList.map((e) => jsonEncode(e.toJson())).toList(),
-              );
-
-              final taskStrings = prefs.getStringList('tasks');
-              final newTaskList = taskStrings?.map((e) => Task.fromJson(jsonDecode(e))).toList();
-
+            onTaskCreated: (Task task) {
+              taskRepository.addTask(task);
               setState(() {});
             },
           ),
