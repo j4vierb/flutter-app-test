@@ -72,7 +72,8 @@ class _TaskListPageState extends State<TaskListPage> {
 class _NewTaskModal extends StatelessWidget {
   _NewTaskModal({required this.onTaskCreated});
 
-  final _controller = TextEditingController();
+  final _titleController = TextEditingController();
+  final _descrController = TextEditingController();
   final void Function(Task task) onTaskCreated;
 
   @override
@@ -91,7 +92,21 @@ class _NewTaskModal extends StatelessWidget {
           SizedBox(height: 26),
           TextField(
             autofocus: true,
-            controller: _controller,
+            controller: _titleController,
+            style: TextStyle(color: Colors.black),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.grey[200],
+              hintText: "Titulo de la tarea",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+          SizedBox(height: 13),
+          TextField(
+            autofocus: true,
+            controller: _descrController,
             style: TextStyle(color: Colors.black),
             decoration: InputDecoration(
               filled: true,
@@ -102,11 +117,12 @@ class _NewTaskModal extends StatelessWidget {
               ),
             ),
           ),
-          SizedBox(height: 26),
+          SizedBox(height: 13),
           ElevatedButton(
             onPressed: () {
-              if (_controller.text.isNotEmpty) {
-                final task = Task(_controller.text);
+              if (_titleController.text.isNotEmpty &&
+                  _descrController.text.isNotEmpty) {
+                final task = Task(_titleController.text, _descrController.text);
                 // pass task to the callback
                 // to be used in the parent widget
                 onTaskCreated(task);
@@ -141,9 +157,19 @@ class _TaskItem extends StatelessWidget {
                   ? Icon(Icons.check_box, color: Colors.black)
                   : Icon(Icons.check_box_outline_blank, color: Colors.black),
               SizedBox(width: 10),
-              Text(
-                task.title,
-                style: TextStyle(fontSize: 16, color: Colors.black),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task.title,
+                    style: TextStyle(fontSize: 20, color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    task.description,
+                    style: TextStyle(fontSize: 15, color: Colors.black),
+                  ),
+                ],
               ),
             ],
           ),
