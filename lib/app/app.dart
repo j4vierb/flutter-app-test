@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:todos_app/app/view/splash/splash_page.dart';
 // import 'package:todos_app/app/view/splash/splash_page.dart';
-import 'package:todos_app/app/view/task_list/task_list.dart';
+// import 'package:todos_app/app/view/task_list/task_list.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -22,9 +23,22 @@ class MyApp extends StatelessWidget {
           bodyColor: textColor,
           fontFamily: 'Inter',
           displayColor: textColor,
+        ),
+        bottomSheetTheme: BottomSheetThemeData(backgroundColor: Colors.white),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            minimumSize: Size(double.infinity, 54),
+            backgroundColor: Colors.teal,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5)),
+            textStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          )
         )
       ),
-      home: TaskListPage(),
+      home: SplashPage(),
     );
   }
 }

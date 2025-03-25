@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:todos_app/app/view/components/h1_title.dart';
 import 'package:todos_app/app/view/components/shape.dart';
-import 'package:todos_app/app/view/task_list/task_list_page.dart';
+import 'package:todos_app/app/view/task_list/task_list.dart';
 
 class SplashPage extends StatelessWidget {
   const SplashPage({super.key});

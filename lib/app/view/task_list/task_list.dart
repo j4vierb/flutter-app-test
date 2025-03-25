@@ -1,10 +1,26 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:todos_app/app/view/components/h1_title.dart';
 import 'package:todos_app/app/view/components/shape.dart';
 import 'package:todos_app/app/view/model/task.dart';
 
-class TaskListPage extends StatelessWidget {
+class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
+
+  @override
+  State<TaskListPage> createState() => _TaskListPageState();
+}
+
+class _TaskListPageState extends State<TaskListPage> {
+  final taskList = <Task>[];
+
+  @override
+  Future<void> initState() async {
+    final prefs = await SharedPreferences.getInstance();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,13 +28,97 @@ class TaskListPage extends StatelessWidget {
       // appBar: AppBar(title: Center(child: Text("Lista de tareas"))),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [const _Header(), Expanded(child: const _TaskList())],
+        children: [
+          const _Header(),
+          Expanded(
+            child: _TaskList(
+              taskList,
+              onTaskDoneChange: (task) {
+                task.done = !task.done;
+                setState(() {});
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          print("HOLA");
-        },
+        onPressed: () => _showNewTaskModal(context),
         child: Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _showNewTaskModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder:
+          (_) => _NewTaskModal(
+            onTaskCreated: (Task task) async {
+              taskList.add(task);
+              final prefs = await SharedPreferences.getInstance();
+              prefs.setStringList(
+                'tasks',
+                taskList.map((e) => jsonEncode(e.toJson())).toList(),
+              );
+
+              final taskStrings = prefs.getStringList('tasks');
+              final newTaskList = taskStrings?.map((e) => Task.fromJson(jsonDecode(e))).toList();
+
+              setState(() {});
+            },
+          ),
+    );
+  }
+}
+
+class _NewTaskModal extends StatelessWidget {
+  _NewTaskModal({required this.onTaskCreated});
+
+  final _controller = TextEditingController();
+  final void Function(Task task) onTaskCreated;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 23, vertical: 23),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          H1Title("Nueva tarea", color: Colors.black),
+          SizedBox(height: 26),
+          TextField(
+            autofocus: true,
+            controller: _controller,
+            style: TextStyle(color: Colors.black),
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.grey[200],
+              hintText: "Descripción de la tarea",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(5),
+              ),
+            ),
+          ),
+          SizedBox(height: 26),
+          ElevatedButton(
+            onPressed: () {
+              if (_controller.text.isNotEmpty) {
+                final task = Task(_controller.text);
+                // pass task to the callback
+                // to be used in the parent widget
+                onTaskCreated(task);
+                Navigator.of(context).pop(task);
+              }
+            },
+            child: Text("Guardar", style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
@@ -87,20 +187,11 @@ class _Header extends StatelessWidget {
   }
 }
 
-class _TaskList extends StatefulWidget {
-  const _TaskList();
+class _TaskList extends StatelessWidget {
+  const _TaskList(this.taskList, {required this.onTaskDoneChange});
 
-  @override
-  State<_TaskList> createState() => _TaskListState();
-}
-
-class _TaskListState extends State<_TaskList> {
-  final taskList = <Task>[
-    Task("Estudiar para algo"),
-    Task("Hacer algo"),
-    Task("Comprar algo"),
-    Task("Hacer algo más"),
-  ];
+  final List<Task> taskList;
+  final void Function(Task task) onTaskDoneChange;
 
   @override
   Widget build(BuildContext context) {
@@ -116,10 +207,7 @@ class _TaskListState extends State<_TaskList> {
               itemBuilder:
                   (_, index) => _TaskItem(
                     taskList[index],
-                    onTap: () {
-                      taskList[index].done = !taskList[index].done;
-                      setState(() {});
-                    },
+                    onTap: () => onTaskDoneChange(taskList[index]),
                   ),
               separatorBuilder: (_, __) => SizedBox(height: 10),
               itemCount: taskList.length,
