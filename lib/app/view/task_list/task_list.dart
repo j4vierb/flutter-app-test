@@ -1,55 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import 'package:todos_app/app/view/components/h1_title.dart';
 import 'package:todos_app/app/view/components/shape.dart';
 import 'package:todos_app/app/view/model/task.dart';
-import 'package:todos_app/app/view/repository/task_repository.dart';
+import 'package:todos_app/app/view/task_list/task_provider.dart';
 
-class TaskListPage extends StatefulWidget {
+class TaskListPage extends StatelessWidget {
   const TaskListPage({super.key});
 
   @override
-  State<TaskListPage> createState() => _TaskListPageState();
-}
-
-class _TaskListPageState extends State<TaskListPage> {
-  final TaskRepository taskRepository = TaskRepository();
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(title: Center(child: Text("Lista de tareas"))),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const _Header(),
-          Expanded(
-            child: FutureBuilder<List<Task>>(
-              future: taskRepository.getTasks(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return Center(child: Text("No hay tareas"));
-                }
-
-                return _TaskList(
-                  snapshot.data!,
-                  onTaskDoneChange: (task) {
-                    task.done = !task.done;
-                    taskRepository.saveTasks(snapshot.data!);
-                    setState(() {});
-                  },
-                );
-              },
-            ),
+    return ChangeNotifierProvider(
+      create: (_) => TaskProvider()..fetchTasks(),
+      child: Scaffold(
+        // appBar: AppBar(title: Center(child: Text("Lista de tareas"))),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [const _Header(), Expanded(child: _TaskList())],
+        ),
+        floatingActionButton: Builder(
+          builder: (context) => FloatingActionButton(
+            onPressed: () => _showNewTaskModal(context),
+            child: Icon(Icons.add),
           ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showNewTaskModal(context),
-        child: Icon(Icons.add),
+        ),
       ),
     );
   }
@@ -58,23 +33,16 @@ class _TaskListPageState extends State<TaskListPage> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder:
-          (_) => _NewTaskModal(
-            onTaskCreated: (Task task) {
-              taskRepository.addTask(task);
-              setState(() {});
-            },
-          ),
+      builder: (_) => ChangeNotifierProvider.value(value: context.read<TaskProvider>(), child: _NewTaskModal()),
     );
   }
 }
 
 class _NewTaskModal extends StatelessWidget {
-  _NewTaskModal({required this.onTaskCreated});
+  _NewTaskModal();
 
   final _titleController = TextEditingController();
   final _descrController = TextEditingController();
-  final void Function(Task task) onTaskCreated;
 
   @override
   Widget build(BuildContext context) {
@@ -124,9 +92,7 @@ class _NewTaskModal extends StatelessWidget {
               if (_titleController.text.isNotEmpty &&
                   _descrController.text.isNotEmpty) {
                 final task = Task(_titleController.text, _descrController.text);
-                // pass task to the callback
-                // to be used in the parent widget
-                onTaskCreated(task);
+                context.read<TaskProvider>().addNewTask(task);
                 Navigator.of(context).pop(task);
               }
             },
@@ -164,7 +130,11 @@ class _TaskItem extends StatelessWidget {
                 children: [
                   Text(
                     task.title,
-                    style: TextStyle(fontSize: 20, color: Colors.black, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     task.description,
@@ -212,10 +182,7 @@ class _Header extends StatelessWidget {
 }
 
 class _TaskList extends StatelessWidget {
-  const _TaskList(this.taskList, {required this.onTaskDoneChange});
-
-  final List<Task> taskList;
-  final void Function(Task task) onTaskDoneChange;
+  const _TaskList();
 
   @override
   Widget build(BuildContext context) {
@@ -227,14 +194,24 @@ class _TaskList extends StatelessWidget {
           const H1Title("Tareas"),
           SizedBox(height: 10),
           Expanded(
-            child: ListView.separated(
-              itemBuilder:
-                  (_, index) => _TaskItem(
-                    taskList[index],
-                    onTap: () => onTaskDoneChange(taskList[index]),
-                  ),
-              separatorBuilder: (_, __) => SizedBox(height: 10),
-              itemCount: taskList.length,
+            child: Consumer<TaskProvider>(
+              builder: (_, provider, _) {
+                if (provider.taskList.isEmpty) {
+                  return Center(child: Text("No hay tareas"));
+                }
+
+                final taskList = provider.taskList;
+
+                return ListView.separated(
+                  itemBuilder:
+                      (_, index) => _TaskItem(
+                        taskList[index],
+                        onTap: () => provider.onTaskDoneChange(taskList[index]),
+                      ),
+                  separatorBuilder: (_, __) => SizedBox(height: 10),
+                  itemCount: taskList.length,
+                );
+              },
             ),
           ),
         ],
