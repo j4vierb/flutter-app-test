@@ -50,8 +50,11 @@ class SplashPage extends StatelessWidget {
               builder: (BuildContext ctx, FollowLink? openLink) {
                 return TextButton.icon(
                   onPressed: openLink,
-                  label: const Text('Terminos y condiciones', style: TextStyle(color: Colors.white),),
-                  icon: const Icon(Icons.open_in_new, color: Colors.white,),
+                  label: const Text(
+                    'Terminos y condiciones',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  icon: const Icon(Icons.open_in_new, color: Colors.white),
                 );
               },
             ),

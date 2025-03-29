@@ -101,6 +101,7 @@ class _NewTaskModal extends StatelessWidget {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(5),
               ),
+              /* errorText: (confirmPassword) */
             ),
           ),
           SizedBox(height: 13),
